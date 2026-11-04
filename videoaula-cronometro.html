@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Videoaula 5 min – Teleprompter</title>
+<style>
+:root{--bg:#faf7f0;--surface:#fff;--ink:#23201b;--muted:#6b6458;--line:#e2dccf;--accent:#1f6f5c;--accent-ink:#fff;--warn:#b3261e;--hi:#e6f2ec;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#181714;--surface:#222019;--ink:#f1ede4;--muted:#a69f91;--line:#38342b;--accent:#58c4a5;--accent-ink:#10231d;--warn:#ff8a80;--hi:#1d2f29}}
+:root[data-theme="dark"]{--bg:#181714;--surface:#222019;--ink:#f1ede4;--muted:#a69f91;--line:#38342b;--accent:#58c4a5;--accent-ink:#10231d;--warn:#ff8a80;--hi:#1d2f29}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Times New Roman",serif;line-height:1.5}
+.wrap{max-width:860px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:1.1rem;margin:0;font-weight:600}
+.sub{color:var(--muted);font-size:.85rem;font-family:system-ui,sans-serif}
+.clock{display:flex;align-items:baseline;gap:16px;margin:14px 0 6px;flex-wrap:wrap}
+#time{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:clamp(3rem,14vw,5.5rem);font-weight:700;letter-spacing:-.02em;line-height:1}
+#time.over{color:var(--warn)}
+#seg{font-family:system-ui,sans-serif;color:var(--muted);font-size:.95rem}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;position:relative}
+#fill{height:100%;width:0;background:var(--accent)}
+.ticks{position:absolute;inset:0;pointer-events:none}
+.ticks i{position:absolute;top:0;bottom:0;width:2px;background:var(--bg)}
+.ctrl{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap;font-family:system-ui,sans-serif}
+button{font:inherit;font-size:.95rem;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;min-width:120px}
+button:focus-visible,.item:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:14px}
+.stage h2{margin:0 0 4px;font-size:1.05rem}
+.cue{font-family:system-ui,sans-serif;font-size:.85rem;color:var(--accent);margin:0 0 12px;min-height:1.2em}
+#speech{font-size:var(--fs,1.6rem);line-height:1.55;margin:0;max-width:34em}
+.list{display:grid;gap:6px;font-family:system-ui,sans-serif}
+.item{border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.item .row{display:flex;align-items:center;gap:6px;padding:4px}
+.item .jump{flex:1;display:flex;gap:12px;align-items:center;border:0;background:none;text-align:left;padding:8px;border-radius:6px}
+.item .tog{font-size:.8rem;padding:6px 10px;white-space:nowrap}
+.item .full{display:none;margin:0;padding:4px 16px 16px;font-size:1.05rem;line-height:1.6;max-width:40em}
+.item.open .full{display:block}
+.item.on{background:var(--hi);border-color:var(--accent)}
+.item.done{opacity:.55}
+.item .t{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;color:var(--muted);min-width:6.5em}
+.item .n{flex:1;font-size:.95rem}
+.item .w{font-size:.8rem;color:var(--muted)}
+.size{margin-left:auto;display:flex;gap:6px;align-items:center}
+#scrub{width:100%;margin:10px 0 0;accent-color:var(--accent);height:28px;cursor:pointer}
+.sd{-webkit-text-stroke:.045em currentColor}
+@media (prefers-reduced-motion:no-preference){#fill{transition:width .2s linear}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>A Feira da Maria · videoaula piloto</h1><div class="sub">Espaço inicia/pausa · setas ← → trocam de fala</div></div>
+</header>
+
+<div class="clock"><div id="time" aria-live="off">0:00</div><div id="seg"></div></div>
+<div class="bar" aria-hidden="true"><div id="fill"></div><div class="ticks" id="ticks"></div></div>
+<input type="range" id="scrub" min="0" max="300" step="1" value="0" aria-label="Linha do tempo: arraste para ir e voltar">
+
+<div class="ctrl">
+  <button class="primary" id="go">Iniciar</button>
+  <button id="reset">Zerar</button>
+  <button id="all" aria-pressed="false">Expandir todas</button>
+  <div class="size"><span class="sub">Letra</span><button id="minus" aria-label="Diminuir letra">A−</button><button id="plus" aria-label="Aumentar letra">A+</button></div>
+</div>
+
+<section class="stage">
+  <h2 id="stTitle"></h2>
+  <p class="cue" id="stCue"></p>
+  <p id="speech"></p>
+</section>
+
+<div class="list" id="list"></div>
+</div>
+
+<script>
+const TOTAL=300;
+const S=[
+{s:0,e:30,t:"Abertura",cue:"Olhe para a câmera e sorria.",
+ x:"Olá, pessoal! Eu sou [SEU NOME], estudante de [CURSO], e hoje vou apresentar o plano de aula da Parte II deste trabalho. A proposta se chama “A Feira da Maria”: uma aula de matemática para o 1º ano do Ensino Fundamental, sobre adição e subtração. Vou mostrar como ela funciona e por que escolhi essa metodologia."},
+{s:30,e:75,t:"Objetivo e habilidades (BNCC)",cue:"",
+ x:"O objetivo é que as crianças compreendam as ideias de juntar, acrescentar, separar e retirar, e criem estratégias próprias de cálculo em situações do cotidiano. Com base na BNCC, trabalho a habilidade EF01MA06, que é construir fatos básicos da adição e da subtração, e a EF01MA08, que é resolver e elaborar problemas com apoio de material manipulável."},
+{s:75,e:135,t:"Metodologia e fragmentação",cue:"",
+ x:"A metodologia é ativa: Aprendizagem Baseada em Problemas, partindo do concreto para o simbólico. A sala vira uma feira, e os alunos se organizam em grupos, alternando os papéis de feirante e cliente, para que todos participem. Assim superamos a fragmentação pedagógica: além da matemática, as crianças escrevem as placas de preço em Língua Portuguesa, conversam sobre alimentação saudável em Ciências e sobre a origem dos alimentos em Geografia."},
+{s:135,e:225,t:"Desenvolvimento da aula",cue:"Mostre as moedas de papel e as figuras de frutas na câmera.",
+ x:"Primeiro, apresento a situação-problema: Maria foi à feira comprar laranjas a pedido da mãe. A mãe lhe deu 8 moedas e pediu que trouxesse o troco. As 5 laranjas custaram 3 moedas. Com quantas moedas Maria deve voltar para casa? Cada grupo recebe 8 moedas de papel e simula a compra: separa 3 moedas para o feirante e descobre quantas restaram. Eu não dou a resposta. Circulo pela sala fazendo perguntas mediadoras, como: “Como você descobriu?” e “Quanto sobrou?”. As crianças conversam, levantam hipóteses e compartilham estratégias. No fim, cada grupo registra e explica o seu raciocínio para a turma."},
+{s:225,e:265,t:"Avaliação",cue:"",
+ x:"A avaliação é formativa e processual, e acontece durante a aula. Observo se o aluno consegue contar oralmente e associar o número à quantidade de objetos, se compreende o sentido de juntar e de retirar, e se interage com o grupo, compartilhando o conhecimento."},
+{s:265,e:300,t:"Encerramento",cue:"Termine olhando para a câmera.",
+ x:"Para finalizar: a Feira da Maria mostra que a criança aprende matemática com mais sentido quando vive a situação. Todos participam, as áreas do conhecimento dialogam e a avaliação acompanha o processo. Muito obrigado(a) pela atenção!"}
+];
+const $=id=>document.getElementById(id);
+const fmt=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+const words=t=>t.trim().split(/\s+/).length;
+let el=0,run=false,last=0,cur=-1,fs=1.6;
+
+const list=$("list");const FW=[],CN=S.map(()=>0);let SW=[],SC=0;
+S.forEach((g,i)=>{
+  const b=document.createElement("div");b.className="item";
+  const d=g.e-g.s,w=words(g.x),wpm=Math.round(w/d*60);
+  b.innerHTML=`<div class="row"><button type="button" class="jump" style="cursor:pointer"><span class="t">${fmt(g.s)} – ${fmt(g.e)}</span><span class="n">${g.t}</span><span class="w">${w} palavras · ${wpm}/min</span></button><button type="button" class="tog" aria-expanded="false">Ver fala</button></div><p class="full"></p>`;
+  FW.push(mk(b.querySelector(".full"),g.x));
+  b.querySelector(".jump").addEventListener("click",()=>{el=g.s;render(true)});
+  b.querySelector(".tog").addEventListener("click",()=>setOpen(b,!b.classList.contains("open")));
+  list.appendChild(b);
+  if(i>0){const k=document.createElement("i");k.style.left=(g.s/TOTAL*100)+"%";$("ticks").appendChild(k)}
+});
+function setOpen(b,o){b.classList.toggle("open",o);const t=b.querySelector(".tog");t.textContent=o?"Recolher":"Ver fala";t.setAttribute("aria-expanded",o)}
+function mk(p,t){p.textContent="";return t.split(/\s+/).map((w,i,a)=>{const s=document.createElement("span");s.textContent=w;p.appendChild(s);if(i<a.length-1)p.appendChild(document.createTextNode(" "));return s})}
+function setRange(a,from,to){if(to>from)for(let k=from;k<to;k++)a[k].classList.add("sd");else for(let k=to;k<from;k++)a[k].classList.remove("sd")}
+function paint(){
+  const i=cur,g=S[i],p=Math.min(1,Math.max(0,(el-g.s)/(g.e-g.s)));
+  const n=Math.round(p*SW.length);
+  if(n!==SC){setRange(SW,SC,n);SC=n}
+  FW.forEach((a,j)=>{const t=j<i?a.length:j===i?Math.round(p*a.length):0;if(t!==CN[j]){setRange(a,CN[j],t);CN[j]=t}});
+}
+let allOpen=false;
+$("all").addEventListener("click",()=>{allOpen=!allOpen;[...list.children].forEach(c=>setOpen(c,allOpen));$("all").textContent=allOpen?"Recolher todas":"Expandir todas";$("all").setAttribute("aria-pressed",allOpen)});
+function segAt(t){for(let i=0;i<S.length;i++)if(t<S[i].e)return i;return S.length-1}
+function render(force){
+  const i=segAt(el);
+  if(i!==cur||force){
+    cur=i;const g=S[i];
+    $("stTitle").textContent=g.t;$("stCue").textContent=g.cue?"Indicação: "+g.cue:"";
+    SW=mk($("speech"),g.x);SC=0;
+    [...list.children].forEach((c,j)=>{c.classList.toggle("on",j===i);c.classList.toggle("done",j<i)});
+    if(allOpen&&run)list.children[i].scrollIntoView({block:"center"});
+  }
+  const g=S[cur];
+  $("time").textContent=fmt(el)+" / 5:00";
+  $("time").classList.toggle("over",el>TOTAL);
+  $("seg").textContent=el>TOTAL?"Passou de 5 minutos":"Trecho: "+fmt(Math.max(0,g.e-el))+" restantes";
+  $("fill").style.width=Math.min(100,el/TOTAL*100)+"%";
+  paint();$("scrub").value=Math.min(TOTAL,el);
+}
+function tick(){
+  if(!run)return;
+  const n=performance.now();el+=(n-last)/1000;last=n;render();
+  requestAnimationFrame(tick);
+}
+function toggle(){
+  run=!run;$("go").textContent=run?"Pausar":(el>0?"Continuar":"Iniciar");
+  if(run){last=performance.now();requestAnimationFrame(tick)}
+}
+function jump(d){const i=Math.min(S.length-1,Math.max(0,segAt(el)+d));el=S[i].s;render(true)}
+$("go").addEventListener("click",toggle);
+$("scrub").addEventListener("input",e=>{el=parseFloat(e.target.value);render()});
+$("reset").addEventListener("click",()=>{run=false;el=0;$("go").textContent="Iniciar";render(true)});
+$("plus").addEventListener("click",()=>{fs=Math.min(3,fs+.2);$("speech").style.setProperty("--fs",fs+"rem");document.documentElement.style.setProperty("--fs",fs+"rem")});
+$("minus").addEventListener("click",()=>{fs=Math.max(1,fs-.2);document.documentElement.style.setProperty("--fs",fs+"rem")});
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="BUTTON"&&e.code==="Space")return;
+  if(e.target.id==="scrub"&&e.key.startsWith("Arrow"))return;
+  if(e.code==="Space"){e.preventDefault();toggle()}
+  if(e.key==="ArrowRight")jump(1);
+  if(e.key==="ArrowLeft")jump(-1);
+});
+render(true);
+</script>
+</body>
+</html>
